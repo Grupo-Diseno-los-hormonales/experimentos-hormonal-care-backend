@@ -1,0 +1,33 @@
+# Ignorar directorios y archivos de construcción generados
+target/
+###!.mvn/wrapper/maven-wrapper.jar
+###**/src/main/**/target/
+###**/src/test/**/target/
+
+# Excluir archivos y directorios específicos de entornos de desarrollo
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Excluir directorios de entornos de desarrollo adicionales
+### VS Code ###
+.vscode/
+
