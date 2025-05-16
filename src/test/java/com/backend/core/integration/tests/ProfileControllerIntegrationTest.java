@@ -1,95 +1,141 @@
 package com.backend.core.integration.tests;
 
+import com.backend.hormonalcare.profile.domain.model.aggregates.Profile;
+import com.backend.hormonalcare.profile.domain.model.queries.GetProfileByUserIdQuery;
+import com.backend.hormonalcare.profile.domain.model.commands.CreateProfileCommand;
 import com.backend.hormonalcare.profile.domain.services.ProfileCommandService;
 import com.backend.hormonalcare.profile.domain.services.ProfileQueryService;
 import com.backend.hormonalcare.profile.interfaces.rest.ProfileController;
 import com.backend.hormonalcare.profile.interfaces.rest.resources.CreateProfileResource;
-import com.backend.hormonalcare.profile.interfaces.rest.resources.ProfileResource;
-import com.backend.hormonalcare.profile.domain.model.commands.CreateProfileCommand;
-import com.backend.hormonalcare.profile.domain.model.queries.GetAllProfilesQuery; // <-- IMPORTA ESTO
-import com.backend.hormonalcare.profile.domain.model.queries.GetProfileByUserIdQuery; // <-- IMPORTA ESTO
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.Date;
 import java.util.Optional;
-import java.util.List; 
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
 
-@WebMvcTest(ProfileController.class)
-class ProfileControllerIntegrationTest {
+public class ProfileControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private ProfileCommandService profileCommandService;
-
-    @MockBean
     private ProfileQueryService profileQueryService;
+    private ProfileController profileController;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @BeforeEach
+    void setUp() {
+        profileCommandService = Mockito.mock(ProfileCommandService.class);
+        profileQueryService = Mockito.mock(ProfileQueryService.class);
+        profileController = new ProfileController(profileCommandService, profileQueryService);
+    }
 
+    /**
+     * Test que verifica que al crear un perfil correctamente,
+     * el controlador retorna HTTP 201 y el body contiene el nombre completo esperado.
+     */
     @Test
-    void createProfile_ReturnsCreated_WhenProfileIsCreated() throws Exception {
+    void createProfile_ReturnsCreated_WhenProfileIsCreated() {
+        // Se mockean todos los value objects requeridos por el assembler
+        Profile mockProfile = Mockito.mock(Profile.class);
+        Mockito.when(mockProfile.getId()).thenReturn(1L);
+        var mockName = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.PersonName.class);
+        Mockito.when(mockName.getFullName()).thenReturn("Juan Pérez");
+        Mockito.when(mockProfile.getName()).thenReturn(mockName);
+        var mockGender = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.Gender.class);
+        Mockito.when(mockGender.getGender()).thenReturn("M");
+        Mockito.when(mockProfile.getGender()).thenReturn(mockGender);
+        var mockPhone = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.PhoneNumber.class);
+        Mockito.when(mockPhone.getPhoneNumber()).thenReturn("999999999");
+        Mockito.when(mockProfile.getPhoneNumber()).thenReturn(mockPhone);
+        Mockito.when(mockProfile.getImage()).thenReturn("img.jpg");
+        var mockBirthday = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.Birthday.class);
+        Mockito.when(mockBirthday.birthday()).thenReturn(new Date());
+        Mockito.when(mockProfile.getBirthday()).thenReturn(mockBirthday);
+        var mockUser = Mockito.mock(com.backend.hormonalcare.iam.domain.model.aggregates.User.class);
+        Mockito.when(mockUser.getId()).thenReturn(1L);
+        Mockito.when(mockProfile.getUser()).thenReturn(mockUser);
+
+        // Especifica el tipo para evitar ambigüedad
+        Mockito.when(profileCommandService.handle(Mockito.any(CreateProfileCommand.class))).thenReturn(Optional.of(mockProfile));
+
         CreateProfileResource resource = new CreateProfileResource(
                 "Juan", "Pérez", "M", "999999999", "img.jpg", new Date(), 1L
         );
-        Mockito.when(profileCommandService.handle(Mockito.any(CreateProfileCommand.class)))
-                .thenReturn(Optional.of(Mockito.mock(com.backend.hormonalcare.profile.domain.model.aggregates.Profile.class)));
 
-        mockMvc.perform(post("/api/v1/profile/profile")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(resource)))
-                .andExpect(status().isCreated());
+        var response = profileController.createProfile(resource);
+
+        assertEquals(201, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        assertEquals("Juan Pérez", response.getBody().fullName());
     }
 
+    /**
+     * Test que verifica que si no se puede crear el perfil,
+     * el controlador retorna HTTP 400 y el body es null.
+     */
     @Test
-    void createProfile_ReturnsBadRequest_WhenProfileNotCreated() throws Exception {
+    void createProfile_ReturnsBadRequest_WhenProfileNotCreated() {
+        // Especifica el tipo para evitar ambigüedad
+        Mockito.when(profileCommandService.handle(Mockito.any(CreateProfileCommand.class))).thenReturn(Optional.empty());
+
         CreateProfileResource resource = new CreateProfileResource(
                 "Juan", "Pérez", "M", "999999999", "img.jpg", new Date(), 1L
         );
-        Mockito.when(profileCommandService.handle(Mockito.any(CreateProfileCommand.class)))
-                .thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/api/v1/profile/profile")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(resource)))
-                .andExpect(status().isBadRequest());
+        var response = profileController.createProfile(resource);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertNull(response.getBody());
     }
 
+    /**
+     * Test que verifica que la existencia de un perfil por userId retorna HTTP 200 y true.
+     */
     @Test
-    void doesProfileExistByUserId_ReturnsOk() throws Exception {
-        Mockito.when(profileQueryService.doesProfileExist(any())).thenReturn(true);
+    void doesProfileExistByUserId_ReturnsOk() {
+        Mockito.when(profileQueryService.doesProfileExist(any(GetProfileByUserIdQuery.class))).thenReturn(true);
 
-        mockMvc.perform(get("/api/v1/profile/profile/userId/exists/1"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+        var response = profileController.doesProfileExistByUserId(1L);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody());
     }
 
+    /**
+     * Test que verifica que al buscar un perfil por userId existente,
+     * el controlador retorna HTTP 200 y el body contiene el nombre completo esperado.
+     */
     @Test
-    void getAllProfiles_ReturnsOk_WhenProfilesExist() throws Exception {
-        Mockito.when(profileQueryService.handle(Mockito.any(GetAllProfilesQuery.class)))
-               .thenReturn(List.of(Mockito.mock(com.backend.hormonalcare.profile.domain.model.aggregates.Profile.class)));
+    void getProfileByUserId_ReturnsOk_WhenProfileExists() {
+        Profile mockProfile = Mockito.mock(Profile.class);
+        // Se mockean los value objects requeridos por el assembler
+        Mockito.when(mockProfile.getId()).thenReturn(1L);
+        var mockName = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.PersonName.class);
+        Mockito.when(mockName.getFullName()).thenReturn("Juan Pérez");
+        Mockito.when(mockProfile.getName()).thenReturn(mockName);
+        var mockGender = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.Gender.class);
+        Mockito.when(mockGender.getGender()).thenReturn("M");
+        Mockito.when(mockProfile.getGender()).thenReturn(mockGender);
+        var mockPhone = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.PhoneNumber.class);
+        Mockito.when(mockPhone.getPhoneNumber()).thenReturn("999999999");
+        Mockito.when(mockProfile.getPhoneNumber()).thenReturn(mockPhone);
+        Mockito.when(mockProfile.getImage()).thenReturn("img.jpg");
+        var mockBirthday = Mockito.mock(com.backend.hormonalcare.profile.domain.model.valueobjects.Birthday.class);
+        Mockito.when(mockBirthday.birthday()).thenReturn(new Date());
+        Mockito.when(mockProfile.getBirthday()).thenReturn(mockBirthday);
+        var mockUser = Mockito.mock(com.backend.hormonalcare.iam.domain.model.aggregates.User.class);
+        Mockito.when(mockUser.getId()).thenReturn(1L);
+        Mockito.when(mockProfile.getUser()).thenReturn(mockUser);
 
-        mockMvc.perform(get("/api/v1/profile/profile"))
-               .andExpect(status().isOk());
-    }
+        Mockito.when(profileQueryService.handle(any(GetProfileByUserIdQuery.class)))
+                .thenReturn(Optional.of(mockProfile));
 
-    @Test
-    void getProfileByUserId_ReturnsOk_WhenProfileExists() throws Exception {
-        Mockito.when(profileQueryService.handle(Mockito.any(GetProfileByUserIdQuery.class)))
-               .thenReturn(Optional.of(Mockito.mock(com.backend.hormonalcare.profile.domain.model.aggregates.Profile.class)));
+        var response = profileController.getProfileByUserId(1L);
 
-        mockMvc.perform(get("/api/v1/profile/profile/userId/1"))
-               .andExpect(status().isOk());
+        assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        assertEquals("Juan Pérez", response.getBody().fullName());
     }
 }

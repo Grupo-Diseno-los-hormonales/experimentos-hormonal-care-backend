@@ -9,87 +9,142 @@ import com.backend.hormonalcare.notification.domain.model.valueobjects.State;
 import com.backend.hormonalcare.notification.domain.services.NotificationCommandService;
 import com.backend.hormonalcare.notification.domain.services.NotificationQueryService;
 import com.backend.hormonalcare.notification.interfaces.rest.NotificationController;
+import com.backend.hormonalcare.notification.interfaces.rest.resources.UpdateNotificationStateResource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(NotificationController.class)
-class NotificationControllerIntegrationTest {
+public class NotificationControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private NotificationCommandService notificationCommandService;
-
-    @MockBean
     private NotificationQueryService notificationQueryService;
+    private NotificationController notificationController;
 
-    @Test
-    void getNotificationById_ReturnsOk_WhenExists() throws Exception {
-        Mockito.when(notificationQueryService.handle(any(GetNotificationByIdQuery.class)))
-                .thenReturn(Optional.of(Mockito.mock(Notification.class)));
-
-        mockMvc.perform(get("/api/v1/notification/1"))
-                .andExpect(status().isOk());
+    @BeforeEach
+    void setUp() {
+        notificationCommandService = Mockito.mock(NotificationCommandService.class);
+        notificationQueryService = Mockito.mock(NotificationQueryService.class);
+        notificationController = new NotificationController(notificationCommandService, notificationQueryService);
     }
 
+    /**
+     * Test que verifica que si existe una notificación con el ID dado,
+     * el controlador retorna HTTP 200 y el body no es null.
+     */
     @Test
-    void getNotificationById_ReturnsNotFound_WhenNotExists() throws Exception {
+    void getNotificationById_ReturnsOk_WhenExists() {
+        Notification mockNotification = Mockito.mock(Notification.class);
+        // Mock necesario para evitar NullPointerException en el assembler
+        Mockito.when(mockNotification.getId()).thenReturn(1L);
+        Mockito.when(mockNotification.getCreatedAt()).thenReturn(new Date());
+        Mockito.when(mockNotification.getTitle()).thenReturn("Titulo");
+        Mockito.when(mockNotification.getMessage()).thenReturn("Mensaje");
+        Mockito.when(mockNotification.getState()).thenReturn(State.UNREAD);
+        Mockito.when(mockNotification.getRecipientId()).thenReturn(2L);
+
+        Mockito.when(notificationQueryService.handle(any(GetNotificationByIdQuery.class)))
+                .thenReturn(Optional.of(mockNotification));
+
+        var response = notificationController.getNotificationById(1L);
+
+        assertTrue(response.getStatusCode().is2xxSuccessful());
+        assertNotNull(response.getBody());
+    }
+
+    /**
+     * Test que verifica que si NO existe una notificación con el ID dado,
+     * el controlador retorna HTTP 404 y el body es null.
+     */
+    @Test
+    void getNotificationById_ReturnsNotFound_WhenNotExists() {
         Mockito.when(notificationQueryService.handle(any(GetNotificationByIdQuery.class)))
                 .thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/v1/notification/1"))
-                .andExpect(status().isNotFound());
+        var response = notificationController.getNotificationById(1L);
+
+        assertTrue(response.getStatusCode().is4xxClientError());
+        assertNull(response.getBody());
     }
 
+    /**
+     * Test que verifica que se retorna HTTP 200 y una lista no vacía al buscar por recipientId.
+     */
     @Test
-    void getNotificationsByRecipientId_ReturnsOk() throws Exception {
+    void getNotificationsByRecipientId_ReturnsOk() {
+        Notification mockNotification = Mockito.mock(Notification.class);
+        Mockito.when(mockNotification.getId()).thenReturn(1L);
+        Mockito.when(mockNotification.getCreatedAt()).thenReturn(new Date());
+        Mockito.when(mockNotification.getTitle()).thenReturn("Titulo");
+        Mockito.when(mockNotification.getMessage()).thenReturn("Mensaje");
+        Mockito.when(mockNotification.getState()).thenReturn(State.UNREAD);
+        Mockito.when(mockNotification.getRecipientId()).thenReturn(2L);
+
         Mockito.when(notificationQueryService.handle(any(GetAllNotificationsByRecipientIdQuery.class)))
-                .thenReturn(List.of(Mockito.mock(Notification.class)));
+                .thenReturn(List.of(mockNotification));
 
-        mockMvc.perform(get("/api/v1/notification/notifications/recipient/1"))
-                .andExpect(status().isOk());
+        var response = notificationController.getNotificationsByRecipientId(2L);
+
+        assertTrue(response.getStatusCode().is2xxSuccessful());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().isEmpty());
     }
 
+    /**
+     * Test que verifica que actualizar el estado de una notificación existente retorna HTTP 200.
+     */
     @Test
-    void updateNotificationState_ReturnsOk_WhenExists() throws Exception {
+    void updateNotificationState_ReturnsOk_WhenExists() {
+        Notification mockNotification = Mockito.mock(Notification.class);
+        Mockito.when(mockNotification.getId()).thenReturn(1L);
+        Mockito.when(mockNotification.getCreatedAt()).thenReturn(new Date());
+        Mockito.when(mockNotification.getTitle()).thenReturn("Titulo");
+        Mockito.when(mockNotification.getMessage()).thenReturn("Mensaje");
+        Mockito.when(mockNotification.getState()).thenReturn(State.READ);
+        Mockito.when(mockNotification.getRecipientId()).thenReturn(2L);
+
         Mockito.when(notificationCommandService.handle(any(UpdateNotificationStateCommand.class)))
-                .thenReturn(Optional.of(Mockito.mock(Notification.class)));
+                .thenReturn(Optional.of(mockNotification));
 
-        mockMvc.perform(put("/api/v1/notification/1/state")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"state\":\"READ\"}"))
-                .andExpect(status().isOk());
+        var resource = new UpdateNotificationStateResource(State.READ);
+        var response = notificationController.updateNotificationState(1L, resource);
+
+        assertTrue(response.getStatusCode().is2xxSuccessful());
+        assertNotNull(response.getBody());
+        assertEquals(State.READ, response.getBody().state());
     }
 
+    /**
+     * Test que verifica que actualizar el estado de una notificación inexistente retorna HTTP 404.
+     */
     @Test
-    void updateNotificationState_ReturnsNotFound_WhenNotExists() throws Exception {
+    void updateNotificationState_ReturnsNotFound_WhenNotExists() {
         Mockito.when(notificationCommandService.handle(any(UpdateNotificationStateCommand.class)))
                 .thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/v1/notification/1/state")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"state\":\"READ\"}"))
-                .andExpect(status().isNotFound());
+        var resource = new UpdateNotificationStateResource(State.READ);
+        var response = notificationController.updateNotificationState(1L, resource);
+
+        assertTrue(response.getStatusCode().is4xxClientError());
+        assertNull(response.getBody());
     }
 
+    /**
+     * Test que verifica que eliminar una notificación retorna HTTP 204 (No Content).
+     */
     @Test
-    void deleteNotification_ReturnsNoContent() throws Exception {
+    void deleteNotification_ReturnsNoContent() {
         Mockito.doNothing().when(notificationCommandService).handle(any(DeleteNotificationCommand.class));
 
-        mockMvc.perform(delete("/api/v1/notification/1"))
-                .andExpect(status().isNoContent());
+        var response = notificationController.deleteNotification(1L);
+
+        assertEquals(204, response.getStatusCode().value());
+        assertNull(response.getBody());
     }
 }

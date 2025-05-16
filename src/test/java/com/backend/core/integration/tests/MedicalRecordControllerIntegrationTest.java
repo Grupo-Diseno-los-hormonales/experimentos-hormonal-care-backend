@@ -2,45 +2,60 @@ package com.backend.core.integration.tests;
 
 import com.backend.hormonalcare.medicalRecord.domain.model.aggregates.MedicalRecord;
 import com.backend.hormonalcare.medicalRecord.domain.model.queries.GetMedicalRecordByIdQuery;
+import com.backend.hormonalcare.medicalRecord.domain.services.MedicalRecordCommandService;
 import com.backend.hormonalcare.medicalRecord.domain.services.MedicalRecordQueryService;
 import com.backend.hormonalcare.medicalRecord.interfaces.rest.MedicalRecordController;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(MedicalRecordController.class)
-class MedicalRecordControllerIntegrationTest {
+public class MedicalRecordControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private MedicalRecordQueryService medicalRecordQueryService;
+    private MedicalRecordCommandService medicalRecordCommandService;
+    private MedicalRecordController medicalRecordController;
 
-    @Test
-    void getMedicalRecordById_ReturnsOk_WhenExists() throws Exception {
-        Mockito.when(medicalRecordQueryService.handle(any(GetMedicalRecordByIdQuery.class)))
-                .thenReturn(Optional.of(Mockito.mock(MedicalRecord.class)));
-
-        mockMvc.perform(get("/api/v1/medicalRecords/1"))
-                .andExpect(status().isOk());
+    @BeforeEach
+    void setUp() {
+        medicalRecordQueryService = Mockito.mock(MedicalRecordQueryService.class);
+        medicalRecordCommandService = Mockito.mock(MedicalRecordCommandService.class);
+        medicalRecordController = new MedicalRecordController(medicalRecordCommandService, medicalRecordQueryService);
     }
 
+    /**
+     * Test que verifica que si existe un registro médico con el ID dado,
+     * el controlador retorna HTTP 200 y el body no es null.
+     */
     @Test
-    void getMedicalRecordById_ReturnsNotFound_WhenNotExists() throws Exception {
+    void getMedicalRecordById_ReturnsOk_WhenExists() {
+        MedicalRecord mockMedicalRecord = Mockito.mock(MedicalRecord.class);
+
+        Mockito.when(medicalRecordQueryService.handle(any(GetMedicalRecordByIdQuery.class)))
+                .thenReturn(Optional.of(mockMedicalRecord));
+
+        var response = medicalRecordController.getMedicalRecordById(1L);
+
+        assertTrue(response.getStatusCode().is2xxSuccessful());
+        assertNotNull(response.getBody());
+    }
+
+    /**
+     * Test que verifica que si NO existe un registro médico con el ID dado,
+     * el controlador retorna HTTP 404 y el body es null.
+     */
+    @Test
+    void getMedicalRecordById_ReturnsNotFound_WhenNotExists() {
         Mockito.when(medicalRecordQueryService.handle(any(GetMedicalRecordByIdQuery.class)))
                 .thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/v1/medicalRecords/1"))
-                .andExpect(status().isNotFound());
+        var response = medicalRecordController.getMedicalRecordById(1L);
+
+        assertTrue(response.getStatusCode().is4xxClientError());
+        assertNull(response.getBody());
     }
 }

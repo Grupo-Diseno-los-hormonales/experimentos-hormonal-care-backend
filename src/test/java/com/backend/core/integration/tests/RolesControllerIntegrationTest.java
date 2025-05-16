@@ -2,41 +2,48 @@ package com.backend.core.integration.tests;
 
 import com.backend.hormonalcare.iam.domain.model.entities.Role;
 import com.backend.hormonalcare.iam.domain.model.queries.GetAllRolesQuery;
+import com.backend.hormonalcare.iam.domain.model.valueobjects.Roles;
 import com.backend.hormonalcare.iam.domain.services.RoleQueryService;
 import com.backend.hormonalcare.iam.interfaces.rest.RolesController;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(RolesController.class)
-class RolesControllerIntegrationTest {
+public class RolesControllerIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private RoleQueryService roleQueryService;
+    private RolesController rolesController;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Test
-    void getAllRoles_ReturnsOk_WhenRolesExist() throws Exception {
-        Mockito.when(roleQueryService.handle(Mockito.any(GetAllRolesQuery.class)))
-                .thenReturn(List.of(Mockito.mock(Role.class)));
-
-        mockMvc.perform(get("/api/v1/roles"))
-                .andExpect(status().isOk());
+    @BeforeEach
+    void setUp() {
+        roleQueryService = Mockito.mock(RoleQueryService.class);
+        rolesController = new RolesController(roleQueryService);
     }
+
+    /**
+     * Test que verifica que el endpoint retorna HTTP 200 y una lista no vacía de roles.
+     */
+@Test
+void getAllRoles_ReturnsOk_AndRoleResourceIsNotNull() {
+    Role mockRole = Mockito.mock(Role.class);
+    Mockito.when(mockRole.getId()).thenReturn(1L);
+    Mockito.when(mockRole.getName()).thenReturn(Roles.ROLE_DOCTOR);
+
+    Mockito.when(roleQueryService.handle(any(GetAllRolesQuery.class)))
+            .thenReturn(List.of(mockRole));
+
+    var response = rolesController.getAllRoles();
+
+    assertEquals(200, response.getStatusCode().value());
+    assertNotNull(response.getBody());
+    assertFalse(response.getBody().isEmpty());
+    // Solo verifica que el recurso no es nulo y el id es correcto
+    assertNotNull(response.getBody().get(0));
+    assertEquals(1L, response.getBody().get(0).id());
+}
 }
