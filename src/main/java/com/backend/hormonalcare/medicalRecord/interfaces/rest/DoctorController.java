@@ -1,10 +1,7 @@
 package com.backend.hormonalcare.medicalRecord.interfaces.rest;
 
 import com.backend.hormonalcare.medicalRecord.domain.model.commands.UpdateDoctorCommand;
-import com.backend.hormonalcare.medicalRecord.domain.model.queries.GetDoctorByDoctorRecordIdQuery;
-import com.backend.hormonalcare.medicalRecord.domain.model.queries.GetDoctorByIdQuery;
-import com.backend.hormonalcare.medicalRecord.domain.model.queries.GetDoctorByProfileIdQuery;
-import com.backend.hormonalcare.medicalRecord.domain.model.queries.GetProfileIdByDoctorIdQuery;
+import com.backend.hormonalcare.medicalRecord.domain.model.queries.*;
 import com.backend.hormonalcare.medicalRecord.domain.model.valueobjects.DoctorRecordId;
 import com.backend.hormonalcare.medicalRecord.domain.model.valueobjects.ProfileId;
 import com.backend.hormonalcare.medicalRecord.domain.services.DoctorCommandService;
@@ -19,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "/api/v1/doctor/doctor", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -87,6 +86,14 @@ public class DoctorController {
         if(doctor.isEmpty()) return ResponseEntity.notFound().build();
         var doctorResource = DoctorResourceFromEntityAssembler.toResourceFromEntity(doctor.get());
         return ResponseEntity.ok(doctorResource);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DoctorResource>> getAllDoctors(){
+        var getAllDoctorsQuery = new GetAllDoctorsQuery();
+        var doctors = doctorQueryService.handle(getAllDoctorsQuery);
+        var doctorResources = doctors.stream().map(DoctorResourceFromEntityAssembler::toResourceFromEntity).toList();
+        return ResponseEntity.ok(doctorResources);
     }
 
     @PutMapping("/{doctorId}")
