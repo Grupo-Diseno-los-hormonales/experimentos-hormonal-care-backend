@@ -24,7 +24,10 @@ public class HormonalCareBackendApplication {
                 @Override
                 public void addCorsMappings(CorsRegistry registry) {
                     registry.addMapping("/**")
-                            .allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH");
+                            .allowedOrigins("https://experimentos-hormonal-care-backend-production.up.railway.app", "http://localhost:3000", "*")
+                            .allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH")
+                            .allowedHeaders("*")
+                            .allowCredentials(true);
                 }
             };
         }
