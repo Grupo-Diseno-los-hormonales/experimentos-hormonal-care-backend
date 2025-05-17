@@ -65,33 +65,36 @@ public class WebSecurityConfiguration {
     public PasswordEncoder passwordEncoder() {
         return hashingService;
     }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // CORS default configuration
-        http.cors(configurer -> configurer.configurationSource(request -> {
-            var cors = new CorsConfiguration();
-            cors.setAllowedOrigins(List.of("*"));
-            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-            cors.setAllowedHeaders(List.of("*"));
-            return cors;
-        }));
-        http.csrf(csrfConfigurer -> csrfConfigurer.disable())
-                .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .authenticationEntryPoint(unauthorizedRequestHandler))
-                .sessionManagement(customizer -> customizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers(
-                                "/api/v1/authentication/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/swagger-resources/**",
-                                "/webjars/**").permitAll()
-                        .anyRequest().authenticated());
-        http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(authorizationRequestFilter(), UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    // CORS configuration para Railway y localhost
+    http.cors(configurer -> configurer.configurationSource(request -> {
+        var cors = new CorsConfiguration();
+        cors.setAllowedOrigins(List.of(
+            "https://experimentos-hormonal-care-backend-production.up.railway.app",
+            "http://localhost:3000"
+        ));
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        cors.setAllowedHeaders(List.of("*"));
+        cors.setAllowCredentials(true);
+        return cors;
+    }));
+    http.csrf(csrfConfigurer -> csrfConfigurer.disable())
+            .exceptionHandling(exceptionHandling -> exceptionHandling
+                    .authenticationEntryPoint(unauthorizedRequestHandler))
+            .sessionManagement(customizer -> customizer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                    .requestMatchers(
+                            "/api/v1/authentication/**",
+                            "/v3/api-docs/**",
+                            "/swagger-ui.html",
+                            "/swagger-ui/**",
+                            "/swagger-resources/**",
+                            "/webjars/**").permitAll()
+                    .anyRequest().authenticated());
+    http.authenticationProvider(authenticationProvider());
+    http.addFilterBefore(authorizationRequestFilter(), UsernamePasswordAuthenticationFilter.class);
+    return http.build();
+}
 
 }
