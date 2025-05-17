@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.lang.NonNull; // <-- Agrega este import
+import org.springframework.lang.NonNull;
 
 @SpringBootApplication
 @EnableJpaAuditing
@@ -18,14 +18,16 @@ public class HormonalCareBackendApplication {
     }
 
     @Configuration
-    public static class Myconfiguration{
+    public static class Myconfiguration {
         @Bean
-        public WebMvcConfigurer corsConfigurer(){
+        public WebMvcConfigurer corsConfigurer() {
             return new WebMvcConfigurer() {
                 @Override
-                public void addCorsMappings(CorsRegistry registry) {
+                public void addCorsMappings(@NonNull CorsRegistry registry) {
                     registry.addMapping("/**")
-                            .allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH");
+                            .allowedOrigins("*")
+                            .allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS")
+                            .allowedHeaders("*");
                 }
             };
         }

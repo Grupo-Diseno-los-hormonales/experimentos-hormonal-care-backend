@@ -68,11 +68,13 @@ public class WebSecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // CORS default configuration
         http.cors(configurer -> configurer.configurationSource(request -> {
             var cors = new CorsConfiguration();
-            cors.setAllowedOrigins(List.of("*"));
-            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+            cors.setAllowedOrigins(List.of(
+                "*", // Permite cualquier origen (incluye Swagger local)
+                "https://editor.swagger.io" // Permite Swagger Editor online
+            ));
+            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
             cors.setAllowedHeaders(List.of("*"));
             return cors;
         }));
