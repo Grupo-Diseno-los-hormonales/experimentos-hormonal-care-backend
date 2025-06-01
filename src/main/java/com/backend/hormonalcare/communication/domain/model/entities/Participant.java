@@ -1,27 +1,45 @@
-package com.backend.hormonalcare.communication.domain.model.valuesobjects;
+package com.backend.hormonalcare.communication.domain.model.entities;
 
-import jakarta.persistence.Embeddable;
+import com.backend.hormonalcare.communication.domain.model.aggregates.Conversation;
+import com.backend.hormonalcare.communication.domain.model.valuesobjects.ParticipantType;
+import com.backend.hormonalcare.iam.domain.model.entities.Role;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-@Embeddable
+import java.time.LocalDateTime;
+
+@Getter
+@Entity
 public class Participant {
-    private Long profileId;
-    private String name;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long userId;
+
+    private ParticipantType type;
+
+    private LocalDateTime joinedAt;
+    private LocalDateTime lastSeenAt;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
 
     protected Participant() {}
 
-    public Participant(Long profileId, String name) {
-        if (profileId == null || name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Profile ID and name must not be null or empty.");
-        }
-        this.profileId = profileId;
-        this.name = name;
+    public Participant(Long userId, ParticipantType type) {
+        this.userId = userId;
+        this.type = type;
+        this.joinedAt = LocalDateTime.now();
+        this.lastSeenAt = LocalDateTime.now();
     }
 
-    public Long getProfileId() {
-        return profileId;
+    public void updateLastSeen() {
+        this.lastSeenAt = LocalDateTime.now();
     }
 
-    public String getName() {
-        return name;
-    }
 }

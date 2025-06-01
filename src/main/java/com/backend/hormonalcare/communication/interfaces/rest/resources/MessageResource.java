@@ -1,4 +1,15 @@
 package com.backend.hormonalcare.communication.interfaces.rest.resources;
 
-public record MessageResource() {
+import java.time.LocalDateTime;
+
+public record MessageResource(
+        Long id,
+        Long senderProfileId,
+        Long receiverProfileId,
+        String text,
+        String messageType,
+        String imageUrl,
+        String status,
+        LocalDateTime sentAt
+) {
 }

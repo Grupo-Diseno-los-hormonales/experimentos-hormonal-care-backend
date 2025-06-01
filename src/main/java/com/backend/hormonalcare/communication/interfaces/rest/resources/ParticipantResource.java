@@ -1,4 +1,12 @@
 package com.backend.hormonalcare.communication.interfaces.rest.resources;
 
-public record ParticipantResource() {
+import java.time.LocalDateTime;
+
+public record ParticipantResource(
+        Long id,
+        Long userId,
+        String participantType,
+        LocalDateTime joinedAt,
+        LocalDateTime lastSeenAt
+) {
 }

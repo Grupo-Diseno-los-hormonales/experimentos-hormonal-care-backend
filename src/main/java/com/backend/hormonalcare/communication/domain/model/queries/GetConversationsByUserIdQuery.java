@@ -1,4 +1,4 @@
 package com.backend.hormonalcare.communication.domain.model.queries;
 
-public record GetConversationsByUserIdQuery() {
+public record GetConversationsByUserIdQuery(Long userId) {
 }

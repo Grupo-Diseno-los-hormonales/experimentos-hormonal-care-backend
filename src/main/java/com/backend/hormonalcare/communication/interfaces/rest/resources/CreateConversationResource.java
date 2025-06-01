@@ -1,4 +1,8 @@
 package com.backend.hormonalcare.communication.interfaces.rest.resources;
 
-public record CreateConversationResource() {
+import java.util.List;
+
+public record CreateConversationResource(
+        List<Long> participantIds
+) {
 }

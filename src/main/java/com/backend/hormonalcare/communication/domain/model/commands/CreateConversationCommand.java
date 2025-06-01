@@ -1,4 +1,8 @@
 package com.backend.hormonalcare.communication.domain.model.commands;
 
-public record CreateConversationCommand() {
+import java.util.List;
+
+public record CreateConversationCommand(
+        List<Long> participantIds
+) {
 }
