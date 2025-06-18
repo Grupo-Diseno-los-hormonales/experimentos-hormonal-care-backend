@@ -30,18 +30,20 @@ public class MessageController {
     }
 
     @PostMapping("/conversations/{conversationId}/messages")
-    public ResponseEntity<Long> sendMessage(
+    public ResponseEntity<MessageResource> sendMessage(
             @PathVariable Long conversationId,
             @RequestBody SendMessageResource resource) {
 
         var command = SendMessageCommandFromResourceAssembler.toCommandFromResource(conversationId, resource);
-        var messageIdOptional = communicationCommandService.handle(command).map(Conversation::getId);
+        var messageOptional = communicationCommandService.handle(command);
 
-        if (messageIdOptional.isEmpty()) {
+        if (messageOptional.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
 
-        return new ResponseEntity<>(messageIdOptional.get(), HttpStatus.CREATED);
+        var message = messageOptional.get();
+        var messageResource = MessageResourceFromEntityAssembler.toResourceFromEntity(message);
+        return new ResponseEntity<>(messageResource, HttpStatus.CREATED);
     }
 
     @GetMapping("/conversations/{conversationId}/messages")

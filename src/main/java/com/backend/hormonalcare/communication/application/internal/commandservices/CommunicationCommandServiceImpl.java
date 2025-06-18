@@ -4,6 +4,7 @@ import com.backend.hormonalcare.communication.domain.model.aggregates.Conversati
 import com.backend.hormonalcare.communication.domain.model.commands.CreateConversationCommand;
 import com.backend.hormonalcare.communication.domain.model.commands.MarkMessageAsReadCommand;
 import com.backend.hormonalcare.communication.domain.model.commands.SendMessageCommand;
+import com.backend.hormonalcare.communication.domain.model.entities.Message;
 import com.backend.hormonalcare.communication.domain.model.entities.Participant;
 import com.backend.hormonalcare.communication.domain.model.valuesobjects.MessageContent;
 import com.backend.hormonalcare.communication.domain.model.valuesobjects.MessageType;
@@ -59,7 +60,7 @@ public class CommunicationCommandServiceImpl implements CommunicationCommandServ
     }
 
     @Override
-    public Optional<Conversation> handle(SendMessageCommand command) {
+    public Optional<Message> handle(SendMessageCommand command) {
         // Validar que la conversación existe
         if (!communicationRepository.existsById(command.conversationId())) {
             throw new IllegalArgumentException("Conversation with id " + command.conversationId() + " does not exist");
@@ -85,7 +86,7 @@ public class CommunicationCommandServiceImpl implements CommunicationCommandServ
             );
 
             communicationRepository.save(conversation);
-            return Optional.of(conversation);
+            return Optional.of(message);
 
         } catch (Exception e) {
             throw new IllegalArgumentException("Error sending message in conversation with id " + command.conversationId() + ": " + e.getMessage());

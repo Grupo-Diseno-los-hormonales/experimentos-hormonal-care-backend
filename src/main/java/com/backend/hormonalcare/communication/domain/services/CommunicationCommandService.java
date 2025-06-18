@@ -4,11 +4,12 @@ import com.backend.hormonalcare.communication.domain.model.aggregates.Conversati
 import com.backend.hormonalcare.communication.domain.model.commands.CreateConversationCommand;
 import com.backend.hormonalcare.communication.domain.model.commands.MarkMessageAsReadCommand;
 import com.backend.hormonalcare.communication.domain.model.commands.SendMessageCommand;
+import com.backend.hormonalcare.communication.domain.model.entities.Message;
 
 import java.util.Optional;
 
 public interface CommunicationCommandService {
     Optional<Conversation> handle(CreateConversationCommand command);
-    Optional<Conversation> handle(SendMessageCommand command);
+    Optional<Message> handle(SendMessageCommand command);
     Optional<Conversation> handle(MarkMessageAsReadCommand command);
 }
