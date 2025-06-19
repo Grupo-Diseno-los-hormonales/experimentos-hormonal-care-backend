@@ -115,4 +115,8 @@ public class Conversation extends AuditableAbstractAggregateRoot<Conversation> {
         return lastActivityAt;
     }
 
+    public Long getId() { // Getter necesario para serialización
+        return id;
+    }
+
 }
