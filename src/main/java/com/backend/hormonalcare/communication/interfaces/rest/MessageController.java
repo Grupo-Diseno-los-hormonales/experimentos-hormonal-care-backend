@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/api/v1/Messages", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/messages", produces = MediaType.APPLICATION_JSON_VALUE)
 public class MessageController {
 
     private final CommunicationCommandService communicationCommandService;
@@ -33,6 +33,8 @@ public class MessageController {
     public ResponseEntity<MessageResource> sendMessage(
             @PathVariable Long conversationId,
             @RequestBody SendMessageResource resource) {
+
+        System.out.println("👉 Se llamó a sendMessage con conversationId: " + conversationId);
 
         var command = SendMessageCommandFromResourceAssembler.toCommandFromResource(conversationId, resource);
         var messageOptional = communicationCommandService.handle(command);

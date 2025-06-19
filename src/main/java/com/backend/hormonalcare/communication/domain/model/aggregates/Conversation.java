@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -23,6 +24,11 @@ public class Conversation extends AuditableAbstractAggregateRoot<Conversation> {
     private Long id;
 
     @ElementCollection
+    @CollectionTable(
+            name = "conversation_participant_profile_ids",
+            joinColumns = @JoinColumn(name = "conversation_id")
+    )
+    @Column(name = "participant_profile_ids")
     private List<Long> participantProfileIds = new ArrayList<>();
 
     @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -36,8 +42,19 @@ public class Conversation extends AuditableAbstractAggregateRoot<Conversation> {
     protected Conversation() {}
 
     public Conversation(List<Participant> participants) {
-        this.participants = new ArrayList<>(participants);
+        this.participants = new ArrayList<>();
+
+        for (Participant p : participants) {
+            p.setConversation(this);
+            this.participants.add(p);
+        }
+
         this.lastActivityAt = LocalDateTime.now();
+
+        this.participantProfileIds = participants.stream()
+                .map(Participant::getUserId)
+                .collect(Collectors.toList());
+
     }
 
     public Message sendMessage(Long senderId, Long recipientId, MessageContent content) {
